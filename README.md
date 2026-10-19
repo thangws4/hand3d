@@ -65,6 +65,8 @@ npm test           # kiểm tra logic cử chỉ
 
 Kéo thả file `.glb` vào trang `/play` để dùng model của bạn.
 
+Trang `/create` tạo mô hình 3D từ một ảnh bằng Space Hugging Face `microsoft/TRELLIS.2`. Cần Hugging Face token miễn phí (loại Read, tạo tại huggingface.co/settings/tokens); token chỉ lưu trong trình duyệt. Mỗi lần tạo dùng khoảng 120 giây GPU từ hạn mức miễn phí của tài khoản bạn.
+
 ## Cấu trúc
 
 ```
