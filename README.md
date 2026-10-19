@@ -65,6 +65,8 @@ npm test           # kiểm tra logic cử chỉ
 
 Kéo thả file `.glb` vào trang `/play` để dùng model của bạn.
 
+Trên web còn tách được model thành linh kiện: **xoè 2 tay** kéo xa/gần để bung/ráp, **chụm khi ngón trỏ nằm trên một linh kiện** để cầm nó ra, **nắm tay** để ráp lại tất cả. Model mặc định là robot mẫu 9 linh kiện; file .glb nhiều mesh thì mỗi mesh là một linh kiện, file một mesh (vd. model tạo từ ảnh) thì không tách được.
+
 Trang `/create` tạo mô hình 3D từ một ảnh bằng Space Hugging Face `microsoft/TRELLIS.2`. Cần Hugging Face token miễn phí (loại Read, tạo tại huggingface.co/settings/tokens); token chỉ lưu trong trình duyệt. Mỗi lần tạo dùng khoảng 120 giây GPU từ hạn mức miễn phí của tài khoản bạn.
 
 Khi chạy local, có thể khỏi dán token trên trang: chép `web/.env.example` thành `web/.env.local` rồi điền `NEXT_PUBLIC_HF_TOKEN=hf_...`. File `.env.local` không bị đưa lên GitHub, và chỉ được đọc khi chạy `npm run dev` (bản build/deploy bỏ qua, token không lọt vào code gửi cho trình duyệt).
