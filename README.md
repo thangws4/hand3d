@@ -26,7 +26,7 @@ Lần chạy đầu tiên sẽ tự tải file mô hình `hand_landmarker.task` 
 |---|---|---|
 | 1 | `python step1_webcam.py` | Webcam soi gương + FPS |
 | 2 | `python step2_hands.py` | 21 điểm khớp tay kèm số thứ tự, nhãn Left/Right |
-| 3 | `python step3_gestures.py` | Chữ PINCH / FIST / OPEN + tỉ lệ chụm để tự chỉnh ngưỡng |
+| 3 | `python step3_gestures.py` | Tên cử chỉ + chỉ số `pinch=` / `thumb=` để tự chỉnh ngưỡng |
 | 4 | `python main.py` | Điều khiển khối lập phương 3D bằng tay |
 | 5 | `python main.py ten_model` | Điều khiển model của bạn (đặt file vào `models/`) |
 
@@ -37,8 +37,11 @@ Kiểm tra logic cử chỉ (không cần webcam): `python gestures.py` → `ges
 | Cử chỉ | Hành động |
 |---|---|
 | Chụm ngón cái + ngón trỏ, di tay | Xoay mô hình |
+| Chỉ giơ ngón trỏ, di tay | Kéo mô hình đi |
+| Chữ V (trỏ + giữa), kéo lên/xuống | Phóng to / thu nhỏ bằng 1 tay |
+| Giơ ngón cái 👍 | Tự quay |
 | Chụm cả 2 tay, kéo xa/gần | Phóng to / thu nhỏ |
-| Nắm tay | Đặt lại |
+| Nắm tay | Đặt lại (góc, vị trí, kích thước) |
 | Xoè tay | Thả, mô hình đứng yên |
 | ESC | Thoát |
 
@@ -62,7 +65,8 @@ Mỗi webcam, mỗi bàn tay và mỗi điều kiện ánh sáng một khác, n�
 
 - `PINCH_THRESHOLD` (`gestures.py`): xem giá trị `pinch=` ở bước 3 để chọn ngưỡng.
 - `Smooth(alpha)`: nhỏ thì mượt hơn nhưng trễ hơn.
-- `ROT_SENS` (`main.py`): độ nhạy khi xoay; đổi dấu nếu thấy xoay ngược chiều.
+- `THUMB_UP_THRESHOLD` (`gestures.py`): xem giá trị `thumb=` ở bước 3; tăng lên nếu nắm tay hay bị nhận nhầm thành 👍.
+- `ROT_SENS`, `PAN_SENS`, `ZOOM_SENS`, `SPIN_SPEED` (`main.py`): độ nhạy xoay / kéo / zoom 1 tay / tốc độ tự quay; đổi dấu nếu thấy ngược chiều.
 
 ## Lỗi thường gặp
 

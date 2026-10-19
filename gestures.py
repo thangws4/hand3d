@@ -1,11 +1,12 @@
 """Nhận diện cử chỉ từ 21 landmark của MediaPipe bằng luật hình học."""
 import math
 
-WRIST, THUMB_TIP, INDEX_TIP, MIDDLE_MCP = 0, 4, 8, 9
+WRIST, THUMB_TIP, INDEX_MCP, INDEX_TIP, MIDDLE_MCP = 0, 4, 5, 8, 9
 # (đầu ngón, khớp giữa PIP) của ngón trỏ, giữa, áp út, út
 FINGERS = [(8, 6), (12, 10), (16, 14), (20, 18)]
 
-PINCH_THRESHOLD = 0.3  # chỉnh theo tay và camera của bạn
+PINCH_THRESHOLD = 0.3     # chỉnh theo tay và camera của bạn
+THUMB_UP_THRESHOLD = 0.5  # chỉnh theo tay và camera; xem giá trị thumb= ở bước 3
 
 
 def dist(a, b):
@@ -22,15 +23,25 @@ def is_pinch(lm):
 
 
 def fingers_up(lm):
-    """Số ngón đang duỗi (không tính ngón cái). Ảnh có y tăng dần xuống dưới."""
-    return sum(lm[tip].y < lm[pip].y for tip, pip in FINGERS)
+    """Ngón nào đang duỗi: [trỏ, giữa, áp út, út] (không tính ngón cái). Ảnh có y tăng dần xuống dưới."""
+    return [lm[tip].y < lm[pip].y for tip, pip in FINGERS]
+
+
+def thumb_lift(lm):
+    """Đầu ngón cái cao hơn gốc ngón trỏ bao nhiêu (chuẩn hoá theo cỡ tay)."""
+    return (lm[INDEX_MCP].y - lm[THUMB_TIP].y) / hand_size(lm)
 
 
 def classify(lm):
     if is_pinch(lm):
         return "PINCH"
-    if fingers_up(lm) == 0:
-        return "FIST"
+    up = fingers_up(lm)
+    if up == [True, False, False, False]:
+        return "POINT"
+    if up == [True, True, False, False]:
+        return "PEACE"
+    if not any(up):
+        return "THUMBS_UP" if thumb_lift(lm) > THUMB_UP_THRESHOLD else "FIST"
     return "OPEN"
 
 
@@ -59,6 +70,9 @@ if __name__ == "__main__":
     assert classify(hand([0.2] * 4, thumb=(0.2, 0.5))) == "OPEN"
     assert classify(hand([0.7] * 4, thumb=(0.2, 0.5), index=(0.5, 0.7))) == "FIST"
     assert classify(hand([0.2] * 4, thumb=(0.5, 0.22))) == "PINCH"
+    assert classify(hand([0.2, 0.7, 0.7, 0.7], thumb=(0.2, 0.5))) == "POINT"
+    assert classify(hand([0.2, 0.2, 0.7, 0.7], thumb=(0.2, 0.5))) == "PEACE"
+    assert classify(hand([0.7] * 4, thumb=(0.5, 0.1), index=(0.5, 0.7))) == "THUMBS_UP"
     s = Smooth(0.5)
     assert s(0) == 0 and s(10) == 5
     print("gestures OK")
