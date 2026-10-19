@@ -10,6 +10,7 @@ export const ZOOM_MIN = 0.2, ZOOM_MAX = 5;
 export const EXPLODE_SENS = 3; // xoè 2 tay: kéo xa thêm 1/10 khung hình → bung thêm 0.3
 export const EXPLODE_MAX = 1.5;
 export const MAX_DT = 0.1; // tab bị ẩn rồi mở lại: không cho dt lớn làm model quay vọt
+export const WHEEL_SENS = 0.0015; // lăn chuột: zoom × exp(−deltaY × WHEEL_SENS)
 const DRAG_GESTURES: Gesture[] = ["PINCH", "POINT", "PEACE"];
 
 export type Hand = { landmarks: Landmark[]; side: "Left" | "Right" };
@@ -25,6 +26,8 @@ export type Transform = {
 };
 /** Linh kiện nằm dưới điểm (x, y) chuẩn hoá của khung 3D, hoặc null. */
 export type HitTest = (x: number, y: number) => string | null;
+/** Chuột trái/một ngón = rotate (bắt đầu trên linh kiện → cầm); chuột phải hoặc Shift + trái = pan. */
+export type PointerMode = "rotate" | "pan";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const initial = (): Transform => ({ rotX: 0, rotY: 0, x: 0, y: 0, zoom: 1, explode: 0, partOffsets: {} });
@@ -34,6 +37,9 @@ export class Controller {
   cursor: Vec2 | null = null; // đầu ngón trỏ tay đầu tiên
   hovered: string | null = null; // linh kiện dưới con trỏ
   grabbed: string | null = null; // linh kiện đang cầm
+  pointerGrab: string | null = null; // linh kiện đang cầm bằng chuột (tách khỏi tay)
+  pointerHovered: string | null = null; // linh kiện dưới chuột
+  #pointer: { mode: PointerMode | "grab"; x: number; y: number } | null = null; // điểm kéo chuột trước
   #drag: { gesture: Gesture; x: number; y: number } | null = null; // vị trí khung trước
   #zoomStart: { d0: number; z0: number } | null = null; // lúc bắt đầu zoom 2 tay
   #explodeStart: { d0: number; e0: number } | null = null; // lúc bắt đầu xoè 2 tay
@@ -45,6 +51,58 @@ export class Controller {
     this.grabbed = null;
     this.#drag = null;
     this.#zoomStart = null;
+    this.#explodeStart = null;
+    this.pointerGrab = null;
+    this.#pointer = null;
+  }
+
+  pointerDown(x: number, y: number, mode: PointerMode, hitTest: HitTest = () => null): void {
+    const hit = mode === "rotate" ? hitTest(x, y) : null;
+    this.pointerGrab = hit;
+    this.#pointer = { mode: hit ? "grab" : mode, x, y };
+  }
+
+  pointerMove(x: number, y: number): void {
+    const p = this.#pointer;
+    if (!p) return;
+    const dx = x - p.x, dy = y - p.y;
+    const t = this.transform;
+    if (p.mode === "grab" && this.pointerGrab) {
+      const o = t.partOffsets[this.pointerGrab] ?? { x: 0, y: 0 };
+      t.partOffsets[this.pointerGrab] = { x: o.x + dx * PAN_SENS, y: o.y - dy * PAN_SENS };
+    } else if (p.mode === "rotate") {
+      t.rotY -= dx * ROT_SENS;
+      t.rotX -= dy * ROT_SENS;
+    } else if (p.mode === "pan") {
+      t.x += dx * PAN_SENS;
+      t.y -= dy * PAN_SENS;
+    }
+    p.x = x;
+    p.y = y;
+  }
+
+  pointerUp(): void {
+    this.#pointer = null;
+    this.pointerGrab = null;
+  }
+
+  /** Rê chuột (không kéo): linh kiện dưới chuột; đang kéo thì giữ nguyên. */
+  pointerHover(x: number, y: number, hitTest: HitTest = () => null): void {
+    if (!this.#pointer) this.pointerHovered = hitTest(x, y);
+  }
+
+  clearHover(): void {
+    this.pointerHovered = null;
+  }
+
+  wheel(deltaY: number): void {
+    const t = this.transform;
+    t.zoom = clamp(t.zoom * Math.exp(-deltaY * WHEEL_SENS), ZOOM_MIN, ZOOM_MAX);
+  }
+
+  /** Thanh trượt độ bung; xoá mốc của 2 tay để nếu tay đang xoè thì lấy giá trị này làm mốc mới. */
+  setExplode(v: number): void {
+    this.transform.explode = clamp(v, 0, EXPLODE_MAX);
     this.#explodeStart = null;
   }
 

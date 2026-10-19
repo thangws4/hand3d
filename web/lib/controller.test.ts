@@ -167,3 +167,89 @@ test("có 2 tay: con trỏ và linh kiện được cầm theo tay đang chụm,
   assert.equal(c.grabbed, "phai");
   assert.deepEqual(c.cursor, { x: 0.8, y: 0.2 });
 });
+
+test("chuột: kéo ở chỗ trống → xoay như chụm tay", () => {
+  const c = new Controller();
+  c.pointerDown(0.5, 0.5, "rotate", () => null);
+  c.pointerMove(0.6, 0.55);
+  close(c.transform.rotY, -0.1 * 300);
+  close(c.transform.rotX, -0.05 * 300);
+});
+
+test("chuột: kéo bắt đầu trên linh kiện → cầm linh kiện, model không xoay", () => {
+  const c = new Controller();
+  c.pointerDown(0.5, 0.5, "rotate", onHead);
+  assert.equal(c.pointerGrab, "dau");
+  c.pointerMove(0.6, 0.45);
+  close(c.transform.partOffsets.dau.x, 0.1 * 20);
+  close(c.transform.partOffsets.dau.y, 0.05 * 20);
+  close(c.transform.rotY, 0);
+});
+
+test("chuột phải / Shift: dịch model", () => {
+  const c = new Controller();
+  c.pointerDown(0.5, 0.5, "pan", onHead); // pan không cầm linh kiện dù đang ở trên
+  assert.equal(c.pointerGrab, null);
+  c.pointerMove(0.6, 0.6);
+  close(c.transform.x, 0.1 * 20);
+  close(c.transform.y, -0.1 * 20);
+});
+
+test("lăn chuột: lên (deltaY âm) phóng to, bị kẹp", () => {
+  const c = new Controller();
+  c.wheel(-100);
+  close(c.transform.zoom, Math.exp(100 * 0.0015));
+  c.wheel(1e6);
+  close(c.transform.zoom, 0.2);
+});
+
+test("thanh trượt: setExplode kẹp [0, 1.5] và thành mốc mới khi 2 tay đang xoè", () => {
+  const c = new Controller();
+  c.setExplode(3);
+  close(c.transform.explode, 1.5);
+  c.setExplode(-1);
+  close(c.transform.explode, 0);
+  c.step([L(open(-0.2)), R(open(0.2))], DT); // mốc tay: explode 0
+  c.setExplode(1);
+  c.step([L(open(-0.2)), R(open(0.2))], DT); // tay đứng yên → giữ giá trị thanh trượt
+  close(c.transform.explode, 1);
+});
+
+test("nhả chuột → hết kéo", () => {
+  const c = new Controller();
+  c.pointerDown(0.5, 0.5, "rotate");
+  c.pointerUp();
+  c.pointerMove(0.9, 0.9);
+  close(c.transform.rotY, 0);
+  assert.equal(c.pointerGrab, null);
+});
+
+test("đang cầm bằng chuột, bước xử lý tay (không có tay) không thả linh kiện", () => {
+  const c = new Controller();
+  c.pointerDown(0.5, 0.5, "rotate", onHead);
+  c.step([], DT, onHead);
+  assert.equal(c.pointerGrab, "dau");
+  c.pointerMove(0.6, 0.5);
+  close(c.transform.partOffsets.dau.x, 0.1 * 20);
+});
+
+test("reset (nắm tay / nút Đặt lại) xoá cả trạng thái chuột", () => {
+  const c = new Controller();
+  c.pointerDown(0.5, 0.5, "rotate", onHead);
+  c.reset();
+  assert.equal(c.pointerGrab, null);
+  c.pointerMove(0.9, 0.9);
+  assert.deepEqual(c.transform.partOffsets, {});
+});
+
+test("rê chuột: hover theo hitTest, giữ nguyên khi đang kéo, clearHover khi rời khung", () => {
+  const c = new Controller();
+  c.pointerHover(0.5, 0.5, onHead);
+  assert.equal(c.pointerHovered, "dau");
+  c.pointerDown(0.5, 0.5, "rotate", () => null);
+  c.pointerHover(0.9, 0.9, onHead);
+  assert.equal(c.pointerHovered, "dau");
+  c.pointerUp();
+  c.clearHover();
+  assert.equal(c.pointerHovered, null);
+});
