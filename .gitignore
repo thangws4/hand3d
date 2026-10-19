@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 hand_landmarker.task
 
+.claude/settings.local.json
