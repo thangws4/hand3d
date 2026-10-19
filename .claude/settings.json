@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && .venv/Scripts/python.exe gestures.py >/dev/null || exit 2"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && .venv/Scripts/python.exe gestures.py >/dev/null && { [ ! -d web ] || (cd web && node --test --test-reporter=dot \"lib/**/*.test.ts\" 1>&2); } || exit 2"
           }
         ]
       }
