@@ -69,3 +69,13 @@ test("offset bị xoá (nắm tay) → linh kiện về đúng chỗ gốc", () 
   rig.updateMatrixWorld(true);
   close(worldX(m), 0.5);
 });
+
+test("mesh bị ẩn (mesh gốc đã được tách) không thành linh kiện", () => {
+  const { rig, root } = scene();
+  const hidden = box(0), shown = box(3);
+  hidden.visible = false;
+  root.add(hidden, shown);
+  rig.updateMatrixWorld(true);
+  const parts = makeParts(root);
+  assert.deepEqual(parts.map((p) => p.mesh), [shown]);
+});

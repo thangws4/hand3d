@@ -20,7 +20,7 @@ export function makeParts(root: THREE.Object3D): PartState[] {
   root.updateMatrixWorld(true);
   const meshes: THREE.Mesh[] = [];
   root.traverse((o) => {
-    if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh);
+    if ((o as THREE.Mesh).isMesh && o.visible) meshes.push(o as THREE.Mesh); // mesh gốc đã tách bị ẩn → bỏ qua
   });
   const modelCenter = root.worldToLocal(new THREE.Box3().setFromObject(root).getCenter(new THREE.Vector3()));
   return meshes.map((mesh, i) => {
