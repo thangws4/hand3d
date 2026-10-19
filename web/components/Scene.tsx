@@ -18,7 +18,7 @@ function Cube() {
 }
 
 /** Model tải về có thể to/nhỏ/lệch tâm bất kỳ → đưa về giữa và co giãn cho vừa. */
-function GltfModel({ url }: { url: string }) {
+export function GltfModel({ url }: { url: string }) {
   const { scene } = useGLTF(url);
   const { offset, scale } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
@@ -36,7 +36,7 @@ function GltfModel({ url }: { url: string }) {
 
 type BoundaryProps = { onError: (e: Error) => void; children: ReactNode };
 /** glb hỏng → báo lỗi và hiện khối lập phương thay vì làm trắng trang. */
-class ModelBoundary extends Component<BoundaryProps, { failed: boolean }> {
+export class ModelBoundary extends Component<BoundaryProps, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };

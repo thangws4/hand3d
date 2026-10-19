@@ -19,7 +19,7 @@ export type GenerateOptions = {
 };
 
 const defaultConnect = async (token: string) =>
-  (await Client.connect(SPACE_ID, { hf_token: token as `hf_${string}`, events: ["data", "status"] })) as unknown as SpaceClient;
+  (await Client.connect(SPACE_ID, { token: token as `hf_${string}`, events: ["data", "status"] })) as unknown as SpaceClient;
 
 export async function generate(image: Blob, token: string, opts: GenerateOptions = {}): Promise<Blob> {
   const { onPhase = () => {}, signal, timeoutMs = TIMEOUT_MS, connect = defaultConnect, fetchFn = fetch } = opts;
