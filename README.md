@@ -53,7 +53,7 @@ Tải file `.obj` / `.glb` miễn phí (Sketchfab, Kenney.nl, Poly Haven) vào `
 
 Chạy trên trình duyệt, không cần Python: Next.js + MediaPipe Tasks Vision + Three.js, mã nguồn trong `web/`.
 
-- Online: (link Vercel — cập nhật sau Task 9)
+- Online: https://hand3d-beta.vercel.app
 - Chạy local (cần Node 22+):
 
 ```bash
