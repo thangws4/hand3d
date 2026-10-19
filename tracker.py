@@ -7,6 +7,8 @@ import cv2
 import mediapipe as mp
 from mediapipe.tasks.python import BaseOptions, vision
 
+CAMERA = 1  # index webcam; máy này: 0 = Snap Camera (ảo), 1 = Integrated Webcam
+
 MODEL_PATH = Path(__file__).with_name("hand_landmarker.task")
 MODEL_URL = ("https://storage.googleapis.com/mediapipe-models/hand_landmarker/"
              "hand_landmarker/float16/latest/hand_landmarker.task")
@@ -18,7 +20,7 @@ CONNECTIONS = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (5, 6), (6, 7), (7, 8),
 
 
 class HandTracker:
-    def __init__(self, camera=0, num_hands=2, width=640, height=480):
+    def __init__(self, camera=CAMERA, num_hands=2, width=640, height=480):
         if not MODEL_PATH.exists():
             print("Đang tải mô hình hand_landmarker.task ...")
             urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)

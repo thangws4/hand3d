@@ -3,12 +3,14 @@ import time
 
 import cv2
 
-cap = cv2.VideoCapture(0)
+from tracker import CAMERA
+
+cap = cv2.VideoCapture(CAMERA)
 prev = time.time()
 while True:
     ok, frame = cap.read()
     if not ok:
-        print("Không đọc được camera. Thử đổi VideoCapture(0) thành VideoCapture(1).")
+        print(f"Không đọc được camera {CAMERA}. Đổi CAMERA trong tracker.py sang 0, 1, 2...")
         break
     frame = cv2.flip(frame, 1)
     now = time.time()

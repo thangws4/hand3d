@@ -69,7 +69,7 @@ Mỗi webcam, mỗi bàn tay và mỗi điều kiện ánh sáng một khác, n�
 | Triệu chứng | Cách xử lý |
 |---|---|
 | `pip install mediapipe` lỗi | Dùng Python 3.10–3.12 |
-| Không đọc được camera | Đổi `HandTracker(camera=1)` hoặc `VideoCapture(1)` |
+| Không đọc được camera / chọn nhầm webcam (vd. camera ảo Snap, OBS) | Đổi `CAMERA` trong `tracker.py` sang 0, 1, 2... |
 | Không phát hiện được tay | Thêm ánh sáng, chọn nền đơn giản |
 | Model 3D bị giật | Giảm `alpha` của `Smooth` |
 | Chạy chậm | `HandTracker(num_hands=1)` hoặc giảm độ phân giải |
