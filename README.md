@@ -46,6 +46,22 @@ Kiểm tra logic cử chỉ (không cần webcam): `python gestures.py` → `ges
 
 Tải file `.obj` / `.glb` miễn phí (Sketchfab, Kenney.nl, Poly Haven) vào `models/`, ví dụ `models/robot.glb`, rồi chạy `python main.py robot`. Model sẽ tự được đưa về giữa màn hình và co giãn cho vừa.
 
+## Bản web
+
+Chạy trên trình duyệt, không cần Python: Next.js + MediaPipe Tasks Vision + Three.js, mã nguồn trong `web/`.
+
+- Online: (link Vercel — cập nhật sau Task 9)
+- Chạy local (cần Node 22+):
+
+```bash
+cd web
+npm install
+npm run dev        # mở http://localhost:3000
+npm test           # kiểm tra logic cử chỉ
+```
+
+Kéo thả file `.glb` vào trang `/play` để dùng model của bạn.
+
 ## Cấu trúc
 
 ```
@@ -54,6 +70,7 @@ gestures.py         Luật nhận diện cử chỉ + bộ lọc rung Smooth
 step1..3_*.py       Bài học theo từng bước
 main.py             Bản hoàn chỉnh: tay → 3D
 models/             Đặt file model 3D ở đây
+web/                Bản web (Next.js): lib/ là logic thuần + test, components/ là giao diện
 ```
 
 ## Các thông số cần tự chỉnh
@@ -80,4 +97,4 @@ Mỗi webcam, mỗi bàn tay và mỗi điều kiện ánh sáng một khác, n�
 - [ ] One Euro Filter thay cho EMA
 - [ ] Dùng trục `z` để đẩy/kéo mô hình theo chiều sâu
 - [ ] Tách camera ra thread riêng để tăng FPS
-- [ ] Phiên bản web: MediaPipe JS + Three.js
+- [x] Phiên bản web: MediaPipe JS + Three.js (xem mục "Bản web")
