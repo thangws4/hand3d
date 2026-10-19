@@ -6,18 +6,10 @@ import * as THREE from "three";
 import type { HitTest, Transform } from "@/lib/controller";
 import { DEMO_PARTS, type DemoPart } from "@/lib/demoModel";
 import { fitScale } from "@/lib/model";
-import { explodeOffset } from "@/lib/parts";
+import { makeParts, placeParts, type PartState } from "@/lib/placeParts";
 
 export type PartSummary = { id: string; name: string };
 export type FrameFn = (dt: number, hitTest: HitTest) => { transform: Transform; highlight: string | null };
-
-type PartInfo = PartSummary & {
-  mesh: THREE.Mesh;
-  root: THREE.Object3D;
-  base: THREE.Vector3; // vị trí gốc của mesh (trong hệ của parent)
-  center: THREE.Vector3; // tâm linh kiện, hệ toạ độ root
-  modelCenter: THREE.Vector3; // tâm cả model, hệ toạ độ root
-};
 
 function PartGeometry({ part }: { part: DemoPart }) {
   const [a, b, c] = part.size;
@@ -83,27 +75,21 @@ function setHighlight(mesh: THREE.Mesh, on: boolean) {
 }
 
 /** Mỗi Mesh trong model là một linh kiện. Clone material để làm sáng một linh kiện không lây sang mesh dùng chung material. */
-function collectParts(root: THREE.Object3D): PartInfo[] {
-  root.updateMatrixWorld(true);
-  const meshes: THREE.Mesh[] = [];
-  root.traverse((o) => {
-    if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh);
-  });
-  const centerInRoot = (o: THREE.Object3D) => root.worldToLocal(new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3()));
-  const modelCenter = centerInRoot(root);
-  return meshes.map((mesh, i) => {
+function collectParts(root: THREE.Object3D): PartState[] {
+  const parts = makeParts(root);
+  for (const { mesh } of parts) {
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map((m) => m.clone()) : mesh.material.clone();
     for (const m of materialsOf(mesh)) {
       if ("emissive" in m) m.userData.baseEmissive = (m as THREE.MeshStandardMaterial).emissive.clone();
     }
-    return { id: mesh.uuid, name: mesh.name || `Linh kiện ${i + 1}`, mesh, root, base: mesh.position.clone(), center: centerInRoot(mesh), modelCenter };
-  });
+  }
+  return parts;
 }
 
 /** Chạy sau khi model trong cùng Suspense đã sẵn sàng; khi unmount trả mesh về chỗ cũ (scene glb được cache và dùng lại). */
 function PartsCollector({ rootRef, partsRef, onParts }: {
   rootRef: RefObject<THREE.Group | null>;
-  partsRef: RefObject<PartInfo[]>;
+  partsRef: RefObject<PartState[]>;
   onParts: (parts: PartSummary[]) => void;
 }) {
   // useEffect (không phải useLayoutEffect): ref của group cha (rootRef) chỉ được gán sau layout effect của con
@@ -125,26 +111,8 @@ function PartsCollector({ rootRef, partsRef, onParts }: {
 }
 
 const deg = THREE.MathUtils.degToRad;
-const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3();
 
-/** Vị trí mỗi linh kiện = gốc + offset bung (hệ root) + offset cầm (mặt phẳng màn hình, đơn vị world). */
-function applyParts(parts: PartInfo[], t: Transform, highlight: string | null) {
-  for (const p of parts) {
-    const off = explodeOffset(p.center, p.modelCenter, t.explode);
-    const a = p.root.localToWorld(tmpA.copy(p.center));
-    const b = p.root.localToWorld(tmpB.set(p.center.x + off.x, p.center.y + off.y, p.center.z + off.z));
-    const grab = t.partOffsets[p.id];
-    if (grab) b.add(new THREE.Vector3(grab.x, grab.y, 0));
-    const parent = p.mesh.parent;
-    if (!parent) continue;
-    parent.worldToLocal(a);
-    parent.worldToLocal(b);
-    p.mesh.position.copy(p.base).add(b.sub(a));
-    setHighlight(p.mesh, p.id === highlight);
-  }
-}
-
-function Rig({ onFrame, partsRef, children }: { onFrame: FrameFn; partsRef: RefObject<PartInfo[]>; children: ReactNode }) {
+function Rig({ onFrame, partsRef, children }: { onFrame: FrameFn; partsRef: RefObject<PartState[]>; children: ReactNode }) {
   const ref = useRef<THREE.Group>(null);
   const camera = useThree((s) => s.camera);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
@@ -167,7 +135,8 @@ function Rig({ onFrame, partsRef, children }: { onFrame: FrameFn; partsRef: RefO
     g.position.set(t.x, t.y, 0);
     g.scale.setScalar(t.zoom);
     g.updateMatrixWorld(true);
-    applyParts(partsRef.current, t, highlight);
+    placeParts(partsRef.current, t.explode, t.partOffsets);
+    for (const p of partsRef.current) setHighlight(p.mesh, p.id === highlight);
   });
   return <group ref={ref}>{children}</group>;
 }
@@ -181,7 +150,7 @@ type Props = {
 
 export const Scene = memo(function Scene({ modelUrl, onFrame, onModelError, onParts }: Props) {
   const rootRef = useRef<THREE.Group>(null);
-  const partsRef = useRef<PartInfo[]>([]);
+  const partsRef = useRef<PartState[]>([]);
   return (
     <Canvas camera={{ position: [0, 0, 20], fov: 40 }} dpr={[1, 2]}>
       <color attach="background" args={["#07090c"]} />

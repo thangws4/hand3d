@@ -158,3 +158,12 @@ test("con trỏ = đầu ngón trỏ của tay đầu tiên; không có tay → 
   assert.equal(c.cursor, null);
   assert.equal(c.hovered, null);
 });
+
+test("có 2 tay: con trỏ và linh kiện được cầm theo tay đang chụm, không phải hands[0]", () => {
+  const c = new Controller();
+  const hit = (x: number) => (x < 0.3 ? "trai" : x > 0.7 ? "phai" : null);
+  // tay trái xoè (ngón trỏ ở x=0.2 → trên "trai"), tay phải chụm ở x=0.8 → trên "phai"
+  c.step([L(open(-0.3)), R(pinch(0.8, 0.2))], DT, hit);
+  assert.equal(c.grabbed, "phai");
+  assert.deepEqual(c.cursor, { x: 0.8, y: 0.2 });
+});

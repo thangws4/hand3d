@@ -51,7 +51,9 @@ export class Controller {
   step(hands: Hand[], dt: number, hitTest: HitTest = () => null): Gesture[] {
     dt = Math.min(dt, MAX_DT);
     const gestures = hands.map((h) => classify(h.landmarks));
-    const tip0 = hands[0]?.landmarks[8];
+    // con trỏ theo tay đang làm cử chỉ kéo (vd. tay phải chụm khi tay trái đang xoè); không có thì tay đầu tiên
+    const dragIdx = gestures.findIndex((g) => DRAG_GESTURES.includes(g));
+    const tip0 = hands[dragIdx >= 0 ? dragIdx : 0]?.landmarks[8];
     this.cursor = tip0 ? { x: tip0.x, y: tip0.y } : null;
     this.hovered = this.cursor ? hitTest(this.cursor.x, this.cursor.y) : null;
     const pinches = hands.filter((_, i) => gestures[i] === "PINCH");
