@@ -10,3 +10,4 @@
 - `web/lib/*.ts` phải chạy được bằng Node type stripping: không enum/namespace/parameter properties; import tương đối ghi đuôi `.ts`.
 - Logic cử chỉ có 2 bản phải giữ đồng bộ: `gestures.py` ↔ `web/lib/gestures.ts`, `main.py update()` ↔ `web/lib/controller.ts`.
 - `/create` gọi Space `microsoft/TRELLIS.2` từ trình duyệt (`web/lib/imageTo3d.ts`, client tiêm được để test). Ẩn danh bị chặn quota; lỗi quota có câu "Authenticate with a Hugging Face token" = token không được chấp nhận (`bad_token`). Không dùng token HF thật khi test — dùng `"hf_" + "x".repeat(34)`.
+- `web/.env.local` (`NEXT_PUBLIC_HF_TOKEN`, gitignored) chỉ được đọc khi `NODE_ENV === "development"` (`web/lib/hfToken.ts`); giữ nguyên điều kiện này — bỏ nó đi thì token bị nhúng vào bundle production. Không đọc/in nội dung `.env.local`.

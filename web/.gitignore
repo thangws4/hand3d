@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# cho phép commit file mẫu (không chứa token thật)
+!.env.example

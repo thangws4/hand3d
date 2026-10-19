@@ -23,3 +23,11 @@ test("loadToken trả chuỗi rỗng khi không có localStorage (ngoài trình 
 test("maskToken chỉ để lộ 4 ký tự cuối", () => {
   assert.equal(maskToken(GOOD), "hf_••••" + GOOD.slice(-4));
 });
+
+test("pickToken: ưu tiên token đã lưu trên trang, sau đó mới tới token từ .env.local (nếu hợp lệ)", async () => {
+  const { pickToken } = await import("./hfToken.ts");
+  assert.equal(pickToken(GOOD, "hf_" + "z".repeat(34)), GOOD);
+  assert.equal(pickToken("", ` ${GOOD} `), GOOD);
+  assert.equal(pickToken("", "hf_sai"), "");
+  assert.equal(pickToken("", ""), "");
+});
