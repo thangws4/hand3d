@@ -1,8 +1,9 @@
 "use client";
 import { useCallback, useRef, useState, type DragEvent } from "react";
 import { CameraPreview } from "@/components/CameraPreview";
-import { Scene } from "@/components/Scene";
-import { Controller } from "@/lib/controller";
+import { Scene, type PartSummary } from "@/components/Scene";
+import { Controller, type HitTest } from "@/lib/controller";
+import { DEMO_NAME } from "@/lib/demoModel";
 import { GESTURE_GUIDE } from "@/lib/gestureGuide";
 import { clearModel, getModel, isModelFile, setModel, type StoredModel } from "@/lib/model";
 import { useHandTracker } from "@/lib/useHandTracker";
@@ -30,6 +31,14 @@ export default function Player() {
   const [toast, setToast] = useState<string | null>(null);
   const hudRef = useRef(hud);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [parts, setParts] = useState<PartSummary[]>([]);
+  const partNames = useRef(new Map<string, string>());
+  const cursorRef = useRef<HTMLDivElement>(null);
+
+  const onParts = useCallback((list: PartSummary[]) => {
+    partNames.current = new Map(list.map((p) => [p.id, p.name]));
+    setParts(list);
+  }, []);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const showToast = useCallback((msg: string) => {
@@ -39,15 +48,25 @@ export default function Player() {
   }, []);
 
   const onFrame = useCallback(
-    (dt: number) => {
+    (dt: number, hitTest: HitTest) => {
       const hands = handsRef.current;
-      const gestures = controller.step(hands, dt);
-      const text = hands.map((h, i) => `${h.side}: ${gestures[i]}`).join(" | ") || "Không thấy tay";
+      const gestures = controller.step(hands, dt, hitTest);
+      const highlight = controller.grabbed ?? controller.hovered;
+      const partName = highlight ? partNames.current.get(highlight) : undefined;
+      const gestureText = hands.map((h, i) => `${h.side}: ${gestures[i]}`).join(" | ") || "Không thấy tay";
+      const text = partName ? `${gestureText} · Linh kiện: ${partName}` : gestureText;
       if (text !== hudRef.current) {
         hudRef.current = text;
         setHud(text);
       }
-      return controller.transform;
+      // Con trỏ cập nhật trực tiếp trên DOM mỗi khung, không qua React state
+      const el = cursorRef.current;
+      const c = controller.cursor;
+      if (el && el.parentElement) {
+        el.style.display = c ? "block" : "none";
+        if (c) el.style.transform = `translate(${c.x * el.parentElement.clientWidth}px, ${c.y * el.parentElement.clientHeight}px)`;
+      }
+      return { transform: controller.transform, highlight };
     },
     [controller, handsRef],
   );
@@ -81,12 +100,22 @@ export default function Player() {
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
     >
-      <Scene modelUrl={model?.url ?? null} onFrame={onFrame} onModelError={onModelError} />
+      <Scene modelUrl={model?.url ?? null} onFrame={onFrame} onModelError={onModelError} onParts={onParts} />
+      {running && (
+        <div
+          ref={cursorRef}
+          aria-hidden
+          className="pointer-events-none absolute left-0 top-0 -ml-3 -mt-3 hidden size-6 rounded-full border-2 border-accent"
+        />
+      )}
 
       {/* HUD trên trái */}
-      <div className="pointer-events-none absolute left-4 top-4 font-mono text-sm">
+      <div className="pointer-events-none absolute left-4 top-4 font-mono text-sm" data-parts={parts.length}>
         {running && <p className="text-accent">{hud}</p>}
-        <p className="mt-1 text-xs text-muted">Model: {model?.name ?? "khối lập phương"}</p>
+        <p className="mt-1 text-xs text-muted">
+          Model: {model?.name ?? DEMO_NAME}
+          {parts.length === 1 && " · liền một khối, không tách được linh kiện"}
+        </p>
       </div>
 
       {/* Điều khiển trên phải */}

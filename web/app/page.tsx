@@ -47,7 +47,7 @@ export default function Home() {
 
       <section className="border-t border-line bg-panel/60">
         <div className="mx-auto max-w-6xl px-5 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight">Sáu cử chỉ</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Các cử chỉ</h2>
           <dl className="mt-8 grid gap-x-12 sm:grid-cols-2">
             {GESTURE_GUIDE.map((g) => (
               <div key={g.gesture} className="flex items-baseline gap-4 border-b border-line py-4">
