@@ -69,6 +69,8 @@ Trên web còn tách được model thành linh kiện: **xoè 2 tay** kéo xa/g
 
 Model có ít mesh (≤ 4) nhưng gồm nhiều mảnh rời (thường gặp với model Sketchfab) được tự tách theo mảnh rời: tối đa 80 linh kiện mỗi mesh, mảnh li ti (ốc, gờ) gộp vào mảnh lớn gần nhất; tên hiển thị "Mảnh 1…N".
 
+Không có webcam vẫn dùng được bằng chuột: kéo để xoay, kéo lên một linh kiện để cầm nó, chuột phải (hoặc Shift + kéo) để dịch, lăn để phóng to; thanh trượt "Độ bung" và nút "Đặt lại" ở trên màn hình. Trên điện thoại kéo một ngón như kéo chuột.
+
 Trang `/create` tạo mô hình 3D từ một ảnh bằng Space Hugging Face `microsoft/TRELLIS.2`. Cần Hugging Face token miễn phí (loại Read, tạo tại huggingface.co/settings/tokens); token chỉ lưu trong trình duyệt. Mỗi lần tạo dùng khoảng 120 giây GPU từ hạn mức miễn phí của tài khoản bạn.
 
 Khi chạy local, có thể khỏi dán token trên trang: chép `web/.env.example` thành `web/.env.local` rồi điền `NEXT_PUBLIC_HF_TOKEN=hf_...`. File `.env.local` không bị đưa lên GitHub, và chỉ được đọc khi chạy `npm run dev` (bản build/deploy bỏ qua, token không lọt vào code gửi cho trình duyệt).

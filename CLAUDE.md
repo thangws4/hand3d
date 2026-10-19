@@ -13,3 +13,4 @@
 - `web/.env.local` (`NEXT_PUBLIC_HF_TOKEN`, gitignored) chỉ được đọc khi `NODE_ENV === "development"` (`web/lib/hfToken.ts`); giữ nguyên điều kiện này — bỏ nó đi thì token bị nhúng vào bundle production. Không đọc/in nội dung `.env.local`.
 - Tách linh kiện chỉ có ở bản web: `Controller.step(hands, dt, hitTest)` — `hitTest` do `Scene` cung cấp (raycast), test dùng hàm giả; mỗi `Mesh` là một linh kiện; robot mẫu ở `web/lib/demoModel.ts`. `PartsCollector` phải dùng `useEffect` (không phải `useLayoutEffect`) vì ref của group cha gán sau layout effect của con.
 - Tự tách mảnh rời: `web/lib/looseParts.ts` (thuần) + `web/lib/splitMesh.ts` (three); `Scene.autoSplit` ẩn mesh gốc, thêm mesh mới, hoàn tác khi gỡ model. Không commit file model thật (`*.glb` đã gitignore).
+- Chuột trong `/play`: API `Controller.pointerDown/Move/Up/Hover`, `wheel`, `setExplode`; trạng thái chuột (`pointerGrab`, `pointerHovered`) tách khỏi tay để `step()` không đè lên.
