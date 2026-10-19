@@ -64,7 +64,7 @@ export default function Creator() {
   };
 
   const pick = async (file: File | undefined) => {
-    if (!file) return;
+    if (!file || running) return; // đang tạo: không đổi ảnh (tránh mất nút Huỷ và chạy job thứ hai)
     try {
       const blob = await prepImage(file);
       if (picked) URL.revokeObjectURL(picked.url);

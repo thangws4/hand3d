@@ -106,3 +106,87 @@ test("connect thất bại → space_down; extract_glb không có url → space_
   const f = fake({ ...OK, "/extract_glb": [{ type: "data", data: [null, null] }] });
   await assert.rejects(generate(IMG, TOKEN, { connect: async () => f.client, fetchFn: okFetch }), { code: "space_down" });
 });
+
+// Mô phỏng đúng @gradio/client 2.7.1 (theo review): cancel() không đóng iterator, sự kiện vẫn tới sau khi huỷ;
+// hàm thường không phát stage "generating" mà phát pending position 0 khi bắt đầu chạy; event_id có sau wait_for_id().
+function lateClient(opts: { idReady?: Promise<void> } = {}) {
+  let release!: () => void;
+  const released = new Promise<void>((r) => (release = r));
+  let cancelled = 0;
+  const client: SpaceClient = {
+    submit(endpoint) {
+      const job = {
+        cancel: async () => {
+          cancelled++;
+        },
+        wait_for_id: async () => {
+          await opts.idReady;
+          return "evt";
+        },
+        async *[Symbol.asyncIterator](): AsyncGenerator<SpaceEvent> {
+          if (endpoint !== "/image_to_3d") return yield* OK[endpoint] as SpaceEvent[];
+          yield { type: "status", stage: "pending", position: 3 };
+          await released; // server chưa đóng stream dù đã huỷ
+          yield { type: "status", stage: "pending", position: 2 };
+          yield { type: "data", data: ["<html>"] };
+        },
+      };
+      return job;
+    },
+  };
+  return { client, release, cancelled: () => cancelled };
+}
+
+test("sự kiện tới muộn sau khi huỷ không được gọi onPhase (UI không bật lại 'đang chạy')", async () => {
+  const c = lateClient();
+  const ctrl = new AbortController();
+  const phases: PhaseInfo[] = [];
+  const p = generate(IMG, TOKEN, {
+    connect: async () => c.client,
+    fetchFn: okFetch,
+    signal: ctrl.signal,
+    onPhase: (ph) => {
+      phases.push(ph);
+      if (ph.position === 3) setTimeout(() => ctrl.abort(), 0);
+    },
+  });
+  await assert.rejects(p, { code: "cancelled" });
+  const seen = phases.length;
+  c.release();
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(phases.length, seen);
+});
+
+test("pending position 0 (process_starts) chuyển giai đoạn về 'generating', không đứng ở 'xếp hàng'", async () => {
+  const f = fake({
+    ...OK,
+    "/image_to_3d": [
+      { type: "status", stage: "pending", position: 2 },
+      { type: "status", stage: "pending", position: 0 },
+      { type: "status", stage: "pending" },
+      { type: "data", data: ["<html>"] },
+    ],
+  });
+  const phases: PhaseInfo[] = [];
+  await generate(IMG, TOKEN, { connect: async () => f.client, fetchFn: okFetch, onPhase: (p) => phases.push(p) });
+  const beforeExport = phases[phases.findIndex((p) => p.phase === "exporting") - 1];
+  assert.equal(beforeExport.phase, "generating");
+});
+
+test("huỷ trước khi có event_id: chỉ gửi cancel sau khi wait_for_id xong (tránh 422, job không chạy ngầm)", async () => {
+  let idReady!: () => void;
+  const c = lateClient({ idReady: new Promise<void>((r) => (idReady = r)) });
+  const ctrl = new AbortController();
+  const p = generate(IMG, TOKEN, {
+    connect: async () => c.client,
+    fetchFn: okFetch,
+    signal: ctrl.signal,
+    onPhase: (ph) => ph.position === 3 && setTimeout(() => ctrl.abort(), 0),
+  });
+  await assert.rejects(p, { code: "cancelled" });
+  assert.equal(c.cancelled(), 0);
+  idReady();
+  await new Promise((r) => setTimeout(r, 10));
+  assert.equal(c.cancelled(), 1);
+  c.release();
+});

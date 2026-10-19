@@ -37,8 +37,8 @@ export function classifyError(err: unknown, fallback: GenErrorCode = "unknown"):
     const code = /Authenticate with a Hugging Face token/i.test(text) ? "bad_token" : "quota";
     return new GenError(code, text, retryIn);
   }
-  if (/invalid (user )?token|unauthori[sz]ed|\b401\b|\b403\b/i.test(text)) return new GenError("bad_token", text);
-  if (/ZeroGPU worker error|could not resolve app config|failed to fetch|networkerror|connection (error|closed)|space .*(sleeping|paused|building|runtime error)/i.test(text)) {
+  if (/invalid (user )?token|unauthori[sz]ed|not authorized|\b401\b|\b403\b/i.test(text)) return new GenError("bad_token", text);
+  if (/ZeroGPU worker error|could not resolve app config|currently busy|failed to fetch|networkerror|connection (error|closed)|space .*(sleeping|paused|building|runtime error)/i.test(text)) {
     return new GenError("space_down", text);
   }
   return new GenError(fallback, text);

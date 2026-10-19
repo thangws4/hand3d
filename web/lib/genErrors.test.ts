@@ -49,3 +49,8 @@ test("mỗi mã lỗi có thông điệp tiếng Việt riêng", () => {
   assert.equal(new Set(texts).size, codes.length);
   assert.match(errorMessage(new GenError("bad_token", "")), /huggingface\.co\/settings\/tokens/);
 });
+
+test("Space bận (queue full) → space_down; không được phép truy cập Space → bad_token", () => {
+  assert.equal(classifyError(new Error("This application is currently busy. Please try again.")).code, "space_down");
+  assert.equal(classifyError(new Error("Not authorized to access this space.")).code, "bad_token");
+});
