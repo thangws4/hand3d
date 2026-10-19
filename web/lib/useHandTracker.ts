@@ -2,7 +2,9 @@
 import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  CAMERA_LOST_MESSAGE,
   cameraErrorMessage,
+  DETECT_FAILED_MESSAGE,
   INSECURE_CONTEXT_MESSAGE,
   MODEL_LOAD_MESSAGE,
   shouldRetryDefault,
@@ -88,8 +90,10 @@ export function useHandTracker(deviceId: string) {
         return fail(cameraErrorMessage(e));
       }
       if (cancelled) return cleanup();
+      // Camera bị rút ra / hệ điều hành tắt giữa phiên: báo lỗi thay vì giữ tay cũ mãi
+      stream.getVideoTracks()[0]?.addEventListener("ended", () => fail(CAMERA_LOST_MESSAGE));
 
-      const all = await navigator.mediaDevices.enumerateDevices();
+      const all = await navigator.mediaDevices.enumerateDevices().catch(() => []);
       if (cancelled) return cleanup();
       setDevices(all.filter((d) => d.kind === "videoinput"));
 
@@ -112,7 +116,11 @@ export function useHandTracker(deviceId: string) {
         if (landmarker && video.readyState >= 2 && video.currentTime !== lastFrame) {
           lastFrame = video.currentTime;
           lastTs = nextTimestamp(lastTs, performance.now());
-          handsRef.current = toHands(landmarker.detectForVideo(video, lastTs));
+          try {
+            handsRef.current = toHands(landmarker.detectForVideo(video, lastTs));
+          } catch {
+            return fail(DETECT_FAILED_MESSAGE); // vd. mất WebGL context: dừng vòng lặp và báo lỗi
+          }
         }
         raf = requestAnimationFrame(loop);
       };

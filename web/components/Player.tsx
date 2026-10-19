@@ -90,7 +90,8 @@ export default function Player() {
       </div>
 
       {/* Điều khiển trên phải */}
-      <div className="absolute right-4 top-4 flex gap-2 text-sm">
+      {/* z-10: nằm trên lớp phủ bắt đầu/lỗi để vẫn đổi được camera và mở model khi camera lỗi */}
+      <div className="absolute right-4 top-4 z-10 flex gap-2 text-sm">
         {devices.length > 1 && (
           <select
             aria-label="Chọn camera"
