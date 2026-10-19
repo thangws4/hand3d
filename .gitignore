@@ -4,3 +4,7 @@ __pycache__/
 hand_landmarker.task
 
 .claude/settings.local.json
+
+# model 3D tải về (thường có bản quyền) — không đưa lên git
+*.glb
+*.gltf
