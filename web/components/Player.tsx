@@ -75,8 +75,10 @@ export default function Player() {
         el.style.display = c ? "block" : "none";
         if (c) el.style.transform = `translate(${c.x * el.parentElement.clientWidth}px, ${c.y * el.parentElement.clientHeight}px)`;
       }
+      // Ghi vô điều kiện: khi đang kéo, explode chính là giá trị vừa onInput nên không giật;
+      // nếu bỏ qua lúc thanh trượt giữ focus thì nó đứng yên ở giá trị cũ sau khi đã dùng
       const s = sliderRef.current;
-      if (s && document.activeElement !== s) s.value = String(controller.transform.explode);
+      if (s) s.value = String(controller.transform.explode);
       return { transform: controller.transform, highlight };
     },
     [controller, handsRef],
@@ -108,9 +110,13 @@ export default function Player() {
     return r ? { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height } : { x: 0, y: 0 };
   };
 
+  // Chỉ một pointer điều khiển một lúc: ngón thứ hai không được ghi đè lượt kéo của ngón đầu
+  const activePointer = useRef<number | null>(null);
+
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0 && e.button !== 2) return;
+    if (activePointer.current !== null || (e.button !== 0 && e.button !== 2)) return;
     const mode: PointerMode = e.button === 2 || e.shiftKey ? "pan" : "rotate";
+    activePointer.current = e.pointerId;
     e.currentTarget.setPointerCapture(e.pointerId); // nhả chuột ngoài khung vẫn kết thúc kéo
     const p = toStage(e);
     controller.pointerDown(p.x, p.y, mode, hitTestRef.current);
@@ -118,11 +124,15 @@ export default function Player() {
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const p = toStage(e);
-    controller.pointerMove(p.x, p.y);
+    if (e.pointerId === activePointer.current) controller.pointerMove(p.x, p.y);
     if (e.pointerType === "mouse") controller.pointerHover(p.x, p.y, hitTestRef.current);
   };
 
-  const onPointerEnd = () => controller.pointerUp();
+  const onPointerEnd = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerId !== activePointer.current) return;
+    activePointer.current = null;
+    controller.pointerUp();
+  };
 
   // Lăn chuột: listener không passive để chặn cuộn trang (onWheel của React là passive)
   useEffect(() => {
@@ -220,7 +230,7 @@ export default function Player() {
       </div>
 
       {/* Độ bung: kéo để bung/ráp; tự cập nhật khi bung bằng 2 tay */}
-      <label className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-3 border border-line bg-panel/90 px-4 py-2 text-sm">
+      <label className="absolute inset-x-4 bottom-4 z-10 flex items-center gap-3 border border-line bg-panel/90 px-4 py-2 text-sm lg:inset-x-auto lg:left-1/2 lg:-translate-x-1/2">
         <span className="text-muted">Độ bung</span>
         <input
           ref={sliderRef}
@@ -231,18 +241,18 @@ export default function Player() {
           defaultValue={0}
           disabled={parts.length < 2}
           onInput={(e) => controller.setExplode(Number(e.currentTarget.value))}
-          className="w-40 accent-[#3df5c4] disabled:opacity-40"
+          className="min-w-0 flex-1 accent-[#3df5c4] disabled:opacity-40 lg:w-40 lg:flex-none"
         />
       </label>
 
       {/* Ô camera dưới trái — luôn mount để hook gắn được stream vào <video> */}
-      <div className="absolute bottom-4 left-4">
+      <div className="absolute bottom-20 left-4 lg:bottom-4">
         <CameraPreview videoRef={videoRef} handsRef={handsRef} visible={running} />
       </div>
 
       {/* Thẻ bật camera ở góc — không che khung 3D, chuột dùng được ngay */}
       {!running && (
-        <div className="absolute bottom-4 right-4 z-10 w-96 border border-line bg-panel p-5">
+        <div className="absolute bottom-20 left-4 right-4 z-10 border border-line bg-panel p-5 sm:left-auto sm:w-96 xl:bottom-4">
           <h1 className="text-lg font-semibold">Điều khiển bằng tay</h1>
           <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
             {GESTURE_GUIDE.map((g) => (
