@@ -9,6 +9,10 @@ export function splitMesh(mesh: THREE.Mesh, maxParts = MAX_AUTO_PARTS): THREE.Me
   const index = geo.index;
   const pos = geo.getAttribute("position");
   if (!index || !pos || Array.isArray(mesh.material) || geo.groups.length > 1) return [];
+  // Ẩn mesh có con thì ẩn luôn con; mesh có xương/instance/morph mà đổi thành Mesh thường sẽ vẽ sai → không tách
+  if (mesh.children.length > 0) return [];
+  if ((mesh as THREE.SkinnedMesh).isSkinnedMesh || (mesh as THREE.InstancedMesh).isInstancedMesh) return [];
+  if (Object.keys(geo.morphAttributes).length > 0) return [];
 
   const flat = new Float32Array(pos.count * 3);
   for (let i = 0; i < pos.count; i++) {
@@ -38,12 +42,13 @@ export function splitMesh(mesh: THREE.Mesh, maxParts = MAX_AUTO_PARTS): THREE.Me
     for (const [name, attr] of Object.entries(geo.attributes)) {
       const size = attr.itemSize;
       const Ctor = attr.array.constructor as new (n: number) => THREE.TypedArray;
-      const arr = new Ctor(olds.length * size);
-      // getComponent đọc đúng cả attribute xen kẽ (InterleavedBufferAttribute)
+      const dst = new THREE.BufferAttribute(new Ctor(olds.length * size), size, attr.normalized);
+      // getComponent đọc đúng cả attribute xen kẽ; với attribute normalized nó trả giá trị đã giải chuẩn hoá,
+      // nên phải ghi qua setComponent (chuẩn hoá lại) chứ không ghi thẳng vào mảng số nguyên
       olds.forEach((old, i) => {
-        for (let c = 0; c < size; c++) arr[i * size + c] = attr.getComponent(old, c);
+        for (let c = 0; c < size; c++) dst.setComponent(i, c, attr.getComponent(old, c));
       });
-      out.setAttribute(name, new THREE.BufferAttribute(arr, size, attr.normalized));
+      out.setAttribute(name, dst);
     }
     out.setIndex(newIndex);
     const m = new THREE.Mesh(out, mesh.material);

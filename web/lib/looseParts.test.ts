@@ -33,7 +33,7 @@ test("mảnh nhỏ nằm sát mảnh lớn A được gộp vào A, không vào 
 });
 
 test("nhiều mảnh hơn giới hạn → đúng maxParts nhóm, giữ mảnh lớn nhất, nhóm 0 là lớn nhất", () => {
-  const { positions, index } = soup([tri(0, 3), tri(20, 5), tri(40, 1), tri(60, 4), tri(80, 2)]);
+  const { positions, index } = soup([tri(0, 3), tri(6, 5), tri(12, 1), tri(18, 4), tri(24, 2)]);
   const g = groupTriangles(positions, index, 3);
   assert.equal(g.groupCount, 3);
   assert.equal(g.groupOfTriangle[1], 0); // cạnh 5
@@ -41,4 +41,9 @@ test("nhiều mảnh hơn giới hạn → đúng maxParts nhóm, giữ mảnh l
   assert.equal(g.groupOfTriangle[0], 2); // cạnh 3
   assert.ok([0, 1, 2].includes(g.groupOfTriangle[2])); // mảnh nhỏ đã gộp
   assert.ok([0, 1, 2].includes(g.groupOfTriangle[4]));
+});
+
+test("model liền khối kèm vài mảnh vụn li ti (thường gặp ở model AI/quét) → không tách", () => {
+  const { positions, index } = soup([tri(0, 10), tri(2, 0.01), tri(5, 0.01), tri(12, 0.02)]);
+  assert.equal(groupTriangles(positions, index).groupCount, 1);
 });

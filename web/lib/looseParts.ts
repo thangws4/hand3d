@@ -1,5 +1,7 @@
 /** Nhóm tam giác theo mảnh rời; giữ tối đa maxParts mảnh lớn nhất, mảnh còn lại gộp vào mảnh lớn gần nhất. Thuần, không three. */
 export const MAX_AUTO_PARTS = 80;
+/** Mảnh nhỏ hơn tỉ lệ này (đường chéo so với cả mesh) không thành linh kiện riêng — tránh "thân + mảnh vụn" ở model AI/quét. */
+export const MIN_PART_RATIO = 0.05;
 export type Grouping = { groupOfTriangle: Int32Array; groupCount: number };
 
 export function groupTriangles(positions: ArrayLike<number>, index: ArrayLike<number>, maxParts = MAX_AUTO_PARTS): Grouping {
@@ -61,7 +63,13 @@ export function groupTriangles(positions: ArrayLike<number>, index: ArrayLike<nu
   // 4. Giữ maxParts mảnh có đường chéo lớn nhất (nhóm 0 = lớn nhất)
   const diag = boxes.map((b) => Math.hypot(b[3] - b[0], b[4] - b[1], b[5] - b[2]));
   const order = boxes.map((_, i) => i).sort((a, b) => diag[b] - diag[a]);
-  const keep = order.slice(0, Math.max(1, maxParts));
+  const all = boxes.reduce(
+    (u, b) => [Math.min(u[0], b[0]), Math.min(u[1], b[1]), Math.min(u[2], b[2]), Math.max(u[3], b[3]), Math.max(u[4], b[4]), Math.max(u[5], b[5])],
+    [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity],
+  );
+  const minDiag = MIN_PART_RATIO * Math.hypot(all[3] - all[0], all[4] - all[1], all[5] - all[2]);
+  const big = order.filter((c) => diag[c] >= minDiag);
+  const keep = (big.length ? big : order).slice(0, Math.max(1, maxParts));
   const groupOfComp = new Int32Array(boxes.length).fill(-1);
   keep.forEach((c, g) => (groupOfComp[c] = g));
 

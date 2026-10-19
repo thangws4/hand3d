@@ -61,3 +61,36 @@ test("một mảnh liền hoặc không có index → không tách", () => {
   const noIndex = new THREE.Mesh(new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3)));
   assert.deepEqual(splitMesh(noIndex), []);
 });
+
+test("attribute số nguyên normalized (gltfpack/KHR_mesh_quantization) được chép đúng giá trị", () => {
+  const P = [0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0.5, 0, 0, 0.6, 0, 0, 0.5, 0.1, 0];
+  const C = [255, 128, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(Int16Array.from(P, (v) => Math.round(v * 32767)), 3, true));
+  g.setAttribute("color", new THREE.BufferAttribute(Uint8Array.from(C), 3, true));
+  g.setIndex([0, 1, 2, 3, 4, 5]);
+  const src = new THREE.Mesh(g, new THREE.MeshStandardMaterial());
+  const parts = splitMesh(src);
+  assert.equal(parts.length, 2);
+  const read = (m: THREE.Mesh, name: string) => {
+    const a = m.geometry.getAttribute(name);
+    return Array.from({ length: a.count * a.itemSize }, (_, i) => +a.getComponent(Math.floor(i / a.itemSize), i % a.itemSize).toFixed(3));
+  };
+  const all = (name: string) => parts.flatMap((m) => read(m, name)).sort().join();
+  assert.equal(all("position"), read(src, "position").sort().join());
+  assert.equal(all("color"), read(src, "color").sort().join());
+});
+
+test("không tách mesh có mesh con, SkinnedMesh, InstancedMesh, mesh có morph target", () => {
+  const withChild = twoTriangles();
+  withChild.add(new THREE.Mesh(new THREE.BoxGeometry()));
+  assert.deepEqual(splitMesh(withChild), []);
+  const base = twoTriangles();
+  const skinned = new THREE.SkinnedMesh(base.geometry, base.material);
+  assert.deepEqual(splitMesh(skinned), []);
+  const instanced = new THREE.InstancedMesh(base.geometry, base.material, 3);
+  assert.deepEqual(splitMesh(instanced), []);
+  const morph = twoTriangles();
+  morph.geometry.morphAttributes.position = [new THREE.Float32BufferAttribute(new Array(18).fill(0), 3)];
+  assert.deepEqual(splitMesh(morph), []);
+});
