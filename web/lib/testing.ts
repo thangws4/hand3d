@@ -23,3 +23,7 @@ export const point = (x: number, y: number) => makeHand([0.2, 0.7, 0.7, 0.7], [0
 export const peace = (x: number, y: number) => makeHand([0.2, 0.2, 0.7, 0.7], [0.2, 0.5], [x, y]);
 export const fist = () => makeHand([0.7, 0.7, 0.7, 0.7], [0.2, 0.5], [0.5, 0.7]);
 export const thumbsUp = () => makeHand([0.7, 0.7, 0.7, 0.7], [0.5, 0.1], [0.5, 0.7]);
+
+/** Dịch cả bàn tay theo trục x (giữ nguyên hình dạng → giữ nguyên cử chỉ). */
+export const shift = (lm: Landmark[], dx: number) => lm.map((p) => ({ ...p, x: p.x + dx }));
+export const open = (dx: number) => shift(makeHand([0.2, 0.2, 0.2, 0.2], [0.2, 0.5]), dx);
