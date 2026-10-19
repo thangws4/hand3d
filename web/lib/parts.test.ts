@@ -8,6 +8,8 @@ test("explodeOffset = (tâm linh kiện − tâm model) × độ bung", () => {
 });
 
 test("độ bung 0 hoặc linh kiện nằm đúng tâm → không dịch", () => {
-  assert.deepEqual(explodeOffset({ x: 5, y: -1, z: 2 }, { x: 0, y: 0, z: 0 }, 0), { x: 0, y: 0, z: 0 });
-  assert.deepEqual(explodeOffset({ x: 1, y: 1, z: 1 }, { x: 1, y: 1, z: 1 }, 1.5), { x: 0, y: 0, z: 0 });
+  // so bằng === để -0 (từ số âm × 0) cũng tính là 0
+  const isZero = (v: { x: number; y: number; z: number }) => v.x === 0 && v.y === 0 && v.z === 0;
+  assert.ok(isZero(explodeOffset({ x: 5, y: -1, z: 2 }, { x: 0, y: 0, z: 0 }, 0)));
+  assert.ok(isZero(explodeOffset({ x: 1, y: 1, z: 1 }, { x: 1, y: 1, z: 1 }, 1.5)));
 });
