@@ -13,7 +13,7 @@ Ngày: 2026-10-19 · Trạng thái: chờ duyệt · Spec tiếp theo: `2026-10-
 **Thành công khi:**
 1. Mở link Vercel trên Chrome desktop có webcam → bấm "Bật camera" → thấy tay được nhận diện và điều khiển được khối 3D bằng cả 6 cử chỉ + zoom 2 tay.
 2. Kéo thả một file `.glb` → model thay khối lập phương, tự căn giữa và vừa khung.
-3. `node --test web/lib` qua; `npm run build` qua.
+3. `npm test` (= `node --test "lib/**/*.test.ts"` trong `web/`) qua; `npm run build` qua.
 4. Chạy local được bằng `npm run dev`.
 
 ## Ngoài phạm vi
@@ -85,13 +85,14 @@ Hằng số giữ nguyên giá trị Python: `PINCH_THRESHOLD=0.3`, `THUMB_UP_TH
 | Từ chối quyền camera (`NotAllowedError`) | Hướng dẫn bật lại quyền trong thanh địa chỉ |
 | Không có camera / camera bận (`NotFoundError`, `NotReadableError`) | Thông báo + gợi ý chọn camera khác / đóng app khác đang dùng |
 | Tải MediaPipe WASM/model lỗi | Thông báo + nút "Thử lại" |
-| File kéo thả không phải glb/gltf hoặc tải lỗi | Toast lỗi, giữ model cũ |
+| File kéo thả không phải glb/gltf | Toast lỗi, giữ model đang hiển thị |
+| File glb/gltf hỏng | Toast lỗi, quay về khối lập phương |
 | Không phải secure context (http không phải localhost) | Thông báo cần https |
 
 ## Kiểm thử
 
-- `node --test web/lib`: `gestures.test.ts` (6 cử chỉ, Smooth) và `controller.test.ts` (FIST reset, zoom 2 tay, PINCH xoay, POINT dịch, PEACE zoom, đổi cử chỉ không giật).
-- Hook PostToolUse trong `.claude/settings.json` chạy thêm `node --test web/lib` (bỏ qua nếu chưa có `web/node_modules`).
+- `npm test` trong `web/` (= `node --test "lib/**/*.test.ts"`; Node 22 không nhận dạng đường dẫn thư mục): `gestures.test.ts` (6 cử chỉ, Smooth) và `controller.test.ts` (FIST reset, zoom 2 tay, PINCH xoay, POINT dịch, PEACE zoom, đổi cử chỉ không giật).
+- Hook PostToolUse trong `.claude/settings.json` chạy thêm lệnh test trên (không cần `node_modules`).
 - `npm run build` + `npm run lint`.
 - Kiểm tra thủ công: chạy `npm run dev`, mở Chrome, xem console không lỗi, ảnh chụp màn hình; cử chỉ thật do người dùng thử.
 
