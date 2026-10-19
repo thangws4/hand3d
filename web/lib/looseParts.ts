@@ -76,7 +76,10 @@ export function groupTriangles(positions: ArrayLike<number>, index: ArrayLike<nu
       const dy = Math.max(K[1] - cy, 0, cy - K[4]);
       const dz = Math.max(K[2] - cz, 0, cz - K[5]);
       const d = dx * dx + dy * dy + dz * dz;
-      if (d < bestD) (bestD = d), (best = g);
+      if (d < bestD) {
+        bestD = d;
+        best = g;
+      }
     });
     groupOfComp[c] = best;
   }

@@ -7,6 +7,7 @@ import type { HitTest, Transform } from "@/lib/controller";
 import { DEMO_PARTS, type DemoPart } from "@/lib/demoModel";
 import { fitScale } from "@/lib/model";
 import { makeParts, placeParts, type PartState } from "@/lib/placeParts";
+import { AUTO_SPLIT_MAX_MESHES, splitMesh } from "@/lib/splitMesh";
 
 export type PartSummary = { id: string; name: string };
 export type FrameFn = (dt: number, hitTest: HitTest) => { transform: Transform; highlight: string | null };
@@ -74,6 +75,40 @@ function setHighlight(mesh: THREE.Mesh, on: boolean) {
   }
 }
 
+/**
+ * Model ít mesh (≤ 4) thường là nhiều mảnh rời bị gộp lại (vd. Sketchfab chuyển từ FBX) → tách theo mảnh rời.
+ * Ẩn mesh gốc, thêm mesh mới cạnh nó; trả về hàm hoàn tác (scene glb được cache và dùng lại).
+ */
+function autoSplit(root: THREE.Object3D): () => void {
+  const meshes: THREE.Mesh[] = [];
+  root.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh && o.visible) meshes.push(o as THREE.Mesh);
+  });
+  if (meshes.length > AUTO_SPLIT_MAX_MESHES) return () => {};
+  const added: THREE.Mesh[] = [];
+  const hidden: THREE.Mesh[] = [];
+  let n = 0;
+  for (const mesh of meshes) {
+    const parent = mesh.parent;
+    const pieces = parent ? splitMesh(mesh) : [];
+    if (!parent || pieces.length === 0) continue;
+    for (const p of pieces) {
+      p.name = `Mảnh ${++n}`;
+      parent.add(p);
+      added.push(p);
+    }
+    mesh.visible = false;
+    hidden.push(mesh);
+  }
+  return () => {
+    for (const p of added) {
+      p.removeFromParent();
+      p.geometry.dispose();
+    }
+    for (const m of hidden) m.visible = true;
+  };
+}
+
 /** Mỗi Mesh trong model là một linh kiện. Clone material để làm sáng một linh kiện không lây sang mesh dùng chung material. */
 function collectParts(root: THREE.Object3D): PartState[] {
   const parts = makeParts(root);
@@ -96,6 +131,7 @@ function PartsCollector({ rootRef, partsRef, onParts }: {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+    const undoSplit = autoSplit(root);
     const parts = collectParts(root);
     partsRef.current = parts;
     onParts(parts.map(({ id, name }) => ({ id, name })));
@@ -104,6 +140,7 @@ function PartsCollector({ rootRef, partsRef, onParts }: {
         p.mesh.position.copy(p.base);
         setHighlight(p.mesh, false);
       }
+      undoSplit();
       partsRef.current = [];
     };
   }, [rootRef, partsRef, onParts]);
